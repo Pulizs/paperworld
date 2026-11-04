@@ -101,8 +101,7 @@ button{font-family:inherit;cursor:pointer;border:0}
 .hud-top{position:absolute;top:max(8px,env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center}
 .pbar{position:relative;flex:1;max-width:520px;height:22px;background:#3b3f9e;border-radius:12px;border:3px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.15)}
 .pfill{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:#ef4444;width:0;transition:width .25s}
-.pbest{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--yellow);border-radius:2px}
-.pbest span{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:#3b3f9e;background:#fff;padding:0 4px;border-radius:6px}
+.pbest{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:9px;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.38) 0 5px,rgba(255,255,255,.12) 5px 10px);border-right:2px solid rgba(255,255,255,.8)}
 .ptext{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .kills{position:absolute;top:calc(max(8px,env(safe-area-inset-top)) + 40px);left:10px;background:rgba(255,255,255,.9);border-radius:20px;padding:3px 12px 3px 6px;
   display:flex;align-items:center;gap:6px;font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.12)}

@@ -7,8 +7,10 @@ Cada fase é um país, e o progresso (porcentagem conquistada) fica salvo no nav
 - **Celular:** arraste o dedo na direção em que quer ir.
 - **Computador:** mova o mouse (o personagem segue o cursor) ou use as setas / WASD. `Esc` pausa.
 - Ao sair do seu território você deixa um rastro. Volte para casa para fechar o laço e ganhar a área.
-- Se alguém tocar no seu rastro, você perde. Se você cortar o rastro de um oponente, ele é eliminado.
-- Bater no próprio rastro também elimina.
+- Se alguém tocar no seu rastro, você perde. Se você cortar o rastro de um oponente, ele é eliminado e **o território dele passa a ser seu**.
+- Cruzar o próprio rastro não elimina.
+- Encostou na borda do mapa? O personagem desliza pela costa **mais rápido** até você mudar de direção. Os cantos do mapa são arredondados.
+- O progresso de cada país é **acumulativo**: 10% numa partida + 10% na outra = 20% do país. Ao chegar em 100% o país está concluído.
 - Faça **50%** em um país para liberar o próximo (20 países, com mais bots e bots mais espertos a cada fase).
 - Moedas ganhas nas partidas compram skins.
 
@@ -21,7 +23,8 @@ Cada fase é um país, e o progresso (porcentagem conquistada) fica salvo no nav
 
 ## Ajustes rápidos (game.js)
 - `UNLOCK_AT` — % necessária para liberar o próximo país (padrão 50).
-- `SPEED`, `PLAYER_TURN`, `BOT_TURN` — velocidade e giro.
+- `SPEED`, `PLAYER_TURN`, `BOT_TURN` — velocidade e giro. `WALL_BOOST` — aceleração ao deslizar na borda.
+- Zoom da câmera: em `resize()`, a linha `Z = clamp(...)` (número maior no divisor = câmera mais afastada).
 - Em `startGame`: quantidade de bots (`nb`) e a personalidade deles (`aggr` agressividade, `greed` tamanho dos laços, `caution` cautela).
 - `SKINS` — lista de skins, cores, padrões e preços.
 - Para adicionar países, inclua novos itens em `countries.js` (contorno normalizado 0–1000).

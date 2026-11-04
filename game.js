@@ -5,6 +5,7 @@
   const UNLOCK_AT = 50;          // % necessária num país para liberar o próximo
   const SPEED = 8.2;             // células por segundo
   const PLAYER_TURN = 7.5;       // rad/s
+  const WALL_BOOST = 1.6;        // multiplicador de velocidade ao deslizar na borda
   const BOT_TURN = 6.5;
   const TAU = Math.PI * 2;
   const $ = (id) => document.getElementById(id);
@@ -125,7 +126,7 @@
     DPR = Math.min(2, window.devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
     cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
     cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
-    Z = clamp(Math.sqrt(VW * VH) / 42, 11, 17);
+    Z = clamp(Math.sqrt(VW * VH) / 34, 13, 21);
     const mm = $('minimap'); mm.width = 140 * DPR; mm.height = 100 * DPR;
     if (state === 'menu') drawMenuShape();
   }
@@ -164,6 +165,18 @@
     const d = g.getImageData(0, 0, W, H).data;
     own = new Uint8Array(W * H).fill(WATER);
     for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] > 127) own[i] = 0;
+    // arredonda os cantos da costa: desfoque em caixa (2 passadas) + limiar
+    {
+      const f = new Float32Array(W * H), tmp = new Float32Array(W * H), R = 3, k = 1 / (2 * R + 1);
+      for (let i = 0; i < W * H; i++) f[i] = own[i] === 0 ? 1 : 0;
+      for (let pass = 0; pass < 2; pass++) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let s2 = 0; for (let q = -R; q <= R; q++) { const xx = x + q; if (xx >= 0 && xx < W) s2 += f[y * W + xx]; } tmp[y * W + x] = s2 * k; }
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let s2 = 0; for (let q = -R; q <= R; q++) { const yy = y + q; if (yy >= 0 && yy < H) s2 += tmp[yy * W + x]; } f[y * W + x] = s2 * k; }
+      }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x; own[i] = (f[i] >= 0.5 && x > 1 && y > 1 && x < W - 2 && y < H - 2) ? 0 : WATER;
+      }
+    }
     trail = new Uint8Array(W * H);
     queue = new Int32Array(W * H); mark = new Uint32Array(W * H); gen = 1;
     // mantém só a maior região contínua de terra
@@ -260,7 +273,7 @@
       id, name: o.name, isPlayer: !!o.isPlayer, color: o.color, dark: o.dark || shade(o.color, -0.3), light: o.light || shade(o.color, 0.45),
       tile: makeTile(o.color, o.pat, S), pattern: null,
       x: 0, y: 0, cx: -1, cy: -1, ang: 0, targetAng: 0, turn: o.isPlayer ? PLAYER_TURN : BOT_TURN, speed: SPEED,
-      alive: false, trail: [], pts: [], count: 0, bb: null, kills: 0, respawnT: 0, combo: 0, lastKill: -9,
+      alive: false, wall: null, trail: [], pts: [], count: 0, bb: null, kills: 0, respawnT: 0, combo: 0, lastKill: -9,
       ai: o.ai || null, spawnT: 0,
     };
     return e;
@@ -287,7 +300,7 @@
         const i = (cy + dy) * W + cx + dx; own[i] = e.id; e.count++; growBB(e, cx + dx, cy + dy);
       }
       e.x = cx + .5; e.y = cy + .5; e.cx = cx; e.cy = cy; e.ang = e.targetAng = rand(0, TAU);
-      e.alive = true; e.trail = []; e.pts = []; e.spawnT = time;
+      e.alive = true; e.wall = null; e.trail = []; e.pts = []; e.spawnT = time;
       if (e.ai) { e.ai.mode = 'home'; e.ai.plan = null; e.ai.homeT = 0; }
       redraw(e.bb.x0, e.bb.y0, e.bb.x1, e.bb.y1);
       return true;
@@ -304,12 +317,19 @@
 
   function kill(v, killer, cause) {
     if (!v.alive) return;
-    v.alive = false;
+    if (v.isPlayer) v.finalPct = pct(v);
+    v.alive = false; v.wall = null;
+    let inherited = 0;
     for (const i of v.trail) if (trail[i] === v.id) trail[i] = 0;
     v.trail = []; v.pts = [];
     const b = v.bb;
     if (b) {
-      for (let y = b.y0; y <= b.y1; y++) for (let x = b.x0; x <= b.x1; x++) { const i = y * W + x; if (own[i] === v.id) own[i] = 0; }
+      // quem eliminou herda o território da vítima
+      const heir = killer && killer !== v && killer.alive ? killer : null;
+      for (let y = b.y0; y <= b.y1; y++) for (let x = b.x0; x <= b.x1; x++) {
+        const i = y * W + x; if (own[i] !== v.id) continue;
+        if (heir) { own[i] = heir.id; heir.count++; growBB(heir, x, y); inherited++; } else own[i] = 0;
+      }
       redraw(b.x0, b.y0, b.x1, b.y1);
     }
     v.count = 0;
@@ -319,7 +339,7 @@
       if (killer.isPlayer) {
         killer.combo = time - killer.lastKill < 4 ? killer.combo + 1 : 1; killer.lastKill = time;
         const T = ['', 'ABATE!', 'DUPLO ABATE!', 'TRIPLO ABATE!', 'IMPARÁVEL!', 'LENDÁRIO!'];
-        showCombo(T[Math.min(5, killer.combo)], v.name); sfx.kill();
+        showCombo(T[Math.min(5, killer.combo)], inherited ? `${v.name} · +${(inherited / landCount * 100).toFixed(1)}%` : v.name); sfx.kill();
         shake = 0.25;
       }
     }
@@ -376,13 +396,7 @@
     e.cx = cx; e.cy = cy;
     const i = cy * W + cx, t = trail[i];
     if (t) {
-      if (t === e.id) {
-        // tolera as últimas células (curvas fechadas)
-        const L = e.trail.length; let recent = false;
-        for (let k = Math.max(0, L - 4); k < L; k++) if (e.trail[k] === i) recent = true;
-        if (recent) return;
-        kill(e, null, 'self'); return;
-      }
+      if (t === e.id) return; // cruzar o próprio rastro não mata
       const v = ents[t];
       if (v && v.alive && time - v.spawnT > 0.3) kill(v, e, 'cut');
     }
@@ -390,16 +404,63 @@
     else { trail[i] = e.id; e.trail.push(i); }
   }
 
+  // direção (normalizada) que aponta para a água mais próxima, ou null se não há água por perto
+  function waterNormal(x, y) {
+    let vx = 0, vy = 0;
+    const cx = x | 0, cy = y | 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (isLandCell(cx + dx, cy + dy)) continue;
+      const wx = cx + dx + .5 - x, wy = cy + dy + .5 - y, d2 = wx * wx + wy * wy;
+      if (d2 > 6.5) continue;
+      vx += wx / d2; vy += wy / d2;
+    }
+    const L = Math.hypot(vx, vy);
+    return L > 1e-6 ? [vx / L, vy / L] : null;
+  }
+
   function moveEntity(e, dt) {
-    const da = angDiff(e.targetAng, e.ang), mt = e.turn * dt;
-    e.ang += clamp(da, -mt, mt);
+    // modo "deslizar na borda" (só o jogador): segue a costa mais rápido até mudar de direção
+    if (e.wall) {
+      const n = waterNormal(e.x, e.y);
+      const tx = Math.cos(e.targetAng), ty = Math.sin(e.targetAng);
+      if (!n || tx * n[0] + ty * n[1] < -0.2 || Math.abs(angDiff(e.targetAng, e.wall.inAng)) > 0.6) e.wall = null;
+    }
+    if (!e.wall) {
+      const da = angDiff(e.targetAng, e.ang), mt = e.turn * dt;
+      e.ang += clamp(da, -mt, mt);
+    }
     if (e.ang > Math.PI) e.ang -= TAU; else if (e.ang < -Math.PI) e.ang += TAU;
-    let dist = e.speed * dt;
-    const ca = Math.cos(e.ang), sa = Math.sin(e.ang);
+    let dist = e.speed * dt * (e.wall ? WALL_BOOST : 1);
+    let ca = Math.cos(e.ang), sa = Math.sin(e.ang);
     while (dist > 1e-6 && e.alive) {
       const st = Math.min(0.34, dist); dist -= st;
       let nx = e.x + ca * st, ny = e.y + sa * st;
-      if (!isLandXY(nx, ny)) {
+      if (e.wall) {
+        const n = waterNormal(e.x, e.y);
+        if (!n) { e.wall = null; }
+        else {
+          let tx = -n[1] * e.wall.sgn, ty = n[0] * e.wall.sgn;
+          let mx = tx + n[0] * 0.3, my = ty + n[1] * 0.3; const ml = Math.hypot(mx, my); mx /= ml; my /= ml;
+          // tenta: rente à borda, tangente, e só o eixo X ou Y (resolve cantos côncavos)
+          const ax = Math.abs(tx) >= Math.abs(ty);
+          const cand = [[mx, my], [tx, ty], ax ? [Math.sign(tx), 0] : [0, Math.sign(ty)], ax ? [0, Math.sign(ty)] : [Math.sign(tx), 0]];
+          let moved = false;
+          for (const [qx, qy] of cand) {
+            const ql = Math.hypot(qx, qy); if (ql < 1e-6) continue;
+            const X = e.x + qx / ql * st, Y = e.y + qy / ql * st;
+            if (isLandXY(X, Y)) { nx = X; ny = Y; moved = true; break; }
+          }
+          if (!moved) { e.wall.sgn *= -1; break; }
+          e.ang = Math.atan2(ny - e.y, nx - e.x); ca = Math.cos(e.ang); sa = Math.sin(e.ang);
+        }
+      }
+      if (!e.wall && !isLandXY(nx, ny)) {
+        const n = e.isPlayer ? waterNormal(e.x, e.y) : null;
+        if (n) {
+          const t1x = -n[1], t1y = n[0];
+          e.wall = { inAng: e.targetAng, sgn: ca * t1x + sa * t1y >= 0 ? 1 : -1 };
+          dist += st; continue;
+        }
         if (isLandXY(nx, e.y)) ny = e.y; else if (isLandXY(e.x, ny)) nx = e.x; else break;
       }
       const px = e.x, py = e.y;
@@ -635,8 +696,7 @@
     bestAtStart = prog(ci);
     state = 'play'; paused = false;
     showScreen(null); $('hud').classList.remove('hidden');
-    $('pbest').style.left = bestAtStart + '%';
-    $('pbest').style.display = bestAtStart > 0 ? '' : 'none';
+    $('pbest').style.width = Math.min(100, bestAtStart) + '%';
     $('pfill').style.background = player.color === '#f1f5f9' ? '#94a3b8' : player.color;
     updateHud(true);
     if (save.games < 3) toast(matchMedia('(pointer: coarse)').matches ? 'Arraste o dedo para mudar a direção' : 'Mova o mouse ou use as setas / WASD');
@@ -656,7 +716,7 @@
     particles = particles.filter((p) => p.life > 0);
     if (player.alive) {
       cam.x += (player.x - cam.x) * Math.min(1, dt * 8); cam.y += (player.y - cam.y) * Math.min(1, dt * 8);
-      if (player.count >= landCount * 0.995 && !won) { won = true; overT = 1.2; sfx.win(); showCombo('PAÍS CONQUISTADO!', '100%'); }
+      if (!won && (bestAtStart + pct(player) >= 100 || player.count >= landCount * 0.995)) { won = true; overT = 1.4; sfx.win(); showCombo('PAÍS CONCLUÍDO!', '100%'); }
     }
     if (overT > 0) { overT -= dt; if (overT <= 0) gameOver(); }
     hudT -= dt; if (hudT <= 0) { hudT = 0.2; updateHud(); }
@@ -667,8 +727,8 @@
 
   function updateHud() {
     const p = pct(player);
-    $('pfill').style.width = Math.min(100, p) + '%';
-    $('ptext').textContent = fmtPct(p);
+    $('pfill').style.width = Math.min(100, bestAtStart + p) + '%';
+    $('ptext').textContent = `${Math.min(100, bestAtStart + p).toFixed(1)}%  (+${fmtPct(p)})`;
     $('killsTxt').textContent = player.kills;
     const list = ents.filter((e) => e && (e.alive || e === player)).sort((a, b) => b.count - a.count);
     const top = list.slice(0, 5); if (!top.includes(player)) top.push(player);
@@ -681,23 +741,23 @@
 
   function gameOver() {
     state = 'over';
-    const p = won ? 100 : pct(player);
+    const p = player.alive ? pct(player) : (player.finalPct || 0);
     const c = COUNTRIES[level];
     const before = prog(level);
-    const after = Math.max(before, Math.round(p * 10) / 10);
+    const after = won ? 100 : Math.min(100, Math.round((before + p) * 10) / 10);
     save.progress[c.id] = after;
     const coins = Math.round(p * 1.5) + player.kills * 5 + (won ? 200 : 0);
     save.coins += coins; save.games++;
     const wasLocked = level + 1 < COUNTRIES.length && before < UNLOCK_AT;
     persist();
-    $('overTitle').textContent = won ? 'País conquistado! 🏆' : 'Fim de jogo';
-    $('overCause').textContent = won ? 'Você pintou o país inteiro!' : deathCause;
+    $('overTitle').textContent = won ? 'País concluído! 🏆' : 'Fim de jogo';
+    $('overCause').textContent = won ? `Você completou 100% de ${c.name}!` : deathCause;
     $('stPct').textContent = fmtPct(p);
     $('stKills').textContent = player.kills;
     $('stCoins').textContent = '+' + coins;
     $('ovFlag').textContent = c.flag; $('ovName').textContent = c.name; $('ovPct').textContent = after.toFixed(1) + '%';
     $('ovBar').style.width = after + '%';
-    let note = after > before ? `Novo recorde! (antes ${before.toFixed(1)}%)` : `Seu recorde: ${before.toFixed(1)}%`;
+    let note = `${before.toFixed(1)}% + ${p.toFixed(1)}% desta partida`;
     if (wasLocked && after >= UNLOCK_AT) note = `🔓 ${COUNTRIES[level + 1].flag} ${COUNTRIES[level + 1].name} foi liberado!`;
     else if (level + 1 < COUNTRIES.length && after < UNLOCK_AT) note += ` · ${UNLOCK_AT}% libera ${COUNTRIES[level + 1].name}`;
     $('ovNote').textContent = note;
