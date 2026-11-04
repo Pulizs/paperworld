@@ -34,9 +34,9 @@
     { id: 'melancia', name: 'Melancia', price: 150, color: '#ef4444', pat: 'seeds', model: 'melancia' },
     { id: 'vaca', name: 'Vaca', price: 250, color: '#f1f5f9', pat: 'spots', dark: '#94a3b8', light: '#ffffff', model: 'vaca' },
     { id: 'unicornio', name: 'Unicórnio', price: 300, color: '#f9a8d4', pat: 'stars', model: 'unicornio' },
-    { id: 'nino', name: 'Nino', price: 400, color: '#27272a', pat: 'paws', model: 'nino' },
-    { id: 'tereza', name: 'Tereza', price: 400, color: '#8a7b68', pat: 'tabby', model: 'tereza' },
-    { id: 'bode', name: 'Bode', price: 450, color: '#e7dfcf', pat: 'grass', dark: '#a8a091', model: 'bode' },
+    { id: 'nino', name: 'Nino', price: 275, color: '#27272a', pat: 'paws', model: 'nino' },
+    { id: 'tereza', name: 'Tereza', price: 100, color: '#8a7b68', pat: 'tabby', model: 'tereza' },
+    { id: 'bode', name: 'Bode', price: 200, color: '#e7dfcf', pat: 'grass', dark: '#a8a091', model: 'bode' },
   ];
   const skinById = (id) => SKINS.find((s) => s.id === id) || SKINS[0];
   if (!SKINS.some((k) => k.id === save.skin)) save.skin = 'classic'; // skin removida volta para a clássica
