@@ -69,6 +69,23 @@
   <div class="grid" id="skinGrid"></div>
 </div>
 
+<!-- Vitrine de skin -->
+<div id="viewer" class="screen viewer hidden">
+  <div class="bubbles"></div>
+  <div class="mtop">
+    <span></span>
+    <div class="coins"><span class="coin"></span><span id="vCoins">0</span></div>
+  </div>
+  <div class="v-title"><span id="vCheck" class="v-check hidden">✓</span><div class="v-name" id="vName"></div></div>
+  <div class="v-stage">
+    <button class="v-arrow" id="vPrev" aria-label="Skin anterior">‹</button>
+    <canvas id="vCanvas" width="640" height="640"></canvas>
+    <button class="v-arrow" id="vNext" aria-label="Próxima skin">›</button>
+  </div>
+  <button class="btn big v-btn" id="vBtn">Usar</button>
+  <button class="v-close" id="vClose" aria-label="Fechar">✕</button>
+</div>
+
 <!-- Países -->
 <div id="countries" class="screen hidden">
   <div class="bubbles"></div>

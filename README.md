@@ -12,7 +12,7 @@ Cada fase é um país, e o progresso (porcentagem conquistada) fica salvo no nav
 - Encostou na borda do mapa? O personagem desliza pela costa **mais rápido** até você mudar de direção. Os cantos do mapa são arredondados.
 - O progresso de cada país é **acumulativo**: 10% numa partida + 10% na outra = 20% do país. Ao chegar em 100% o país está concluído.
 - Faça **50%** em um país para liberar o próximo (20 países, com mais bots e bots mais espertos a cada fase).
-- Moedas ganhas nas partidas compram skins.
+- Moedas ganhas nas partidas compram skins. Os personagens são modelos 3D em blocos (voxel) desenhados no próprio canvas, que giram conforme a direção. Toque numa skin para abrir a vitrine com o modelo girando.
 
 ## Publicar no GitHub Pages (grátis)
 1. Crie um repositório público no GitHub (ex.: `paper-world`).
@@ -26,7 +26,7 @@ Cada fase é um país, e o progresso (porcentagem conquistada) fica salvo no nav
 - `SPEED`, `PLAYER_TURN`, `BOT_TURN` — velocidade e giro. `WALL_BOOST` — aceleração ao deslizar na borda.
 - Zoom da câmera: em `resize()`, a linha `Z = clamp(...)` (número maior no divisor = câmera mais afastada).
 - Em `startGame`: quantidade de bots (`nb`) e a personalidade deles (`aggr` agressividade, `greed` tamanho dos laços, `caution` cautela).
-- `SKINS` — lista de skins, cores, padrões e preços.
+- `SKINS` — lista de skins, cores, padrões e preços. `MODELS` — modelos 3D (cada um é uma lista de caixas `B(frente, lado, altura, largF, largL, alt, cor)`); skins sem modelo usam o cubo padrão.
 - Para adicionar países, inclua novos itens em `countries.js` (contorno normalizado 0–1000).
 
 ## Créditos

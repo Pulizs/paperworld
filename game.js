@@ -33,11 +33,11 @@
     { id: 'classic', name: 'Clássico', price: 0, color: '#3b82f6', pat: 'none' },
     { id: 'menta', name: 'Menta', price: 60, color: '#14b8a6', pat: 'dots' },
     { id: 'uva', name: 'Uva', price: 100, color: '#a855f7', pat: 'dots' },
-    { id: 'melancia', name: 'Melancia', price: 150, color: '#ef4444', pat: 'seeds' },
+    { id: 'melancia', name: 'Melancia', price: 150, color: '#ef4444', pat: 'seeds', model: 'melancia' },
     { id: 'mel', name: 'Favo de Mel', price: 200, color: '#f59e0b', pat: 'hex' },
     { id: 'alien', name: 'Alien', price: 220, color: '#22c55e', pat: 'alien' },
-    { id: 'vaca', name: 'Vaca', price: 250, color: '#f1f5f9', pat: 'spots', dark: '#94a3b8', light: '#ffffff' },
-    { id: 'unicornio', name: 'Unicórnio', price: 300, color: '#f9a8d4', pat: 'stars' },
+    { id: 'vaca', name: 'Vaca', price: 250, color: '#f1f5f9', pat: 'spots', dark: '#94a3b8', light: '#ffffff', model: 'vaca' },
+    { id: 'unicornio', name: 'Unicórnio', price: 300, color: '#f9a8d4', pat: 'stars', model: 'unicornio' },
     { id: 'lava', name: 'Lava', price: 350, color: '#f97316', pat: 'stripes' },
     { id: 'carvao', name: 'Carvão', price: 400, color: '#334155', pat: 'dots' },
     { id: 'galaxia', name: 'Galáxia', price: 500, color: '#4c1d95', pat: 'stars' },
@@ -274,7 +274,7 @@
       tile: makeTile(o.color, o.pat, S), pattern: null,
       x: 0, y: 0, cx: -1, cy: -1, ang: 0, targetAng: 0, turn: o.isPlayer ? PLAYER_TURN : BOT_TURN, speed: SPEED,
       alive: false, wall: null, trail: [], pts: [], count: 0, bb: null, kills: 0, respawnT: 0, combo: 0, lastKill: -9,
-      ai: o.ai || null, spawnT: 0,
+      ai: o.ai || null, spawnT: 0, model: getModel(o.model, o.color),
     };
     return e;
   }
@@ -675,7 +675,7 @@
     buildMap(ci); renderLand();
     ents = [null]; particles = []; time = 0; won = false; overT = 0; shake = 0; deathCause = '';
     const sk = skinById(save.skin);
-    player = makeEnt(1, { name: save.name || 'Você', isPlayer: true, color: sk.color, pat: sk.pat, dark: sk.dark, light: sk.light });
+    player = makeEnt(1, { name: save.name || 'Você', isPlayer: true, color: sk.color, pat: sk.pat, dark: sk.dark, light: sk.light, model: sk.model });
     ents.push(player);
     const nb = Math.min(14, 6 + Math.floor(ci * 0.5));
     const names = NAMES.slice().sort(() => Math.random() - .5);
@@ -785,18 +785,97 @@
     g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
 
-  function drawHead(g, e, sx, sy, s) {
-    g.save(); g.translate(sx, sy);
-    g.fillStyle = 'rgba(0,0,0,.16)'; roundRect(g, -s / 2, -s / 2 + s * .32, s, s, s * .26); g.fill();
-    g.fillStyle = e.dark; roundRect(g, -s / 2, -s / 2 + s * .18, s, s, s * .26); g.fill();
-    g.fillStyle = e.color; roundRect(g, -s / 2, -s / 2, s, s, s * .26); g.fill();
-    g.fillStyle = 'rgba(255,255,255,.28)'; roundRect(g, -s * .38, -s * .4, s * .76, s * .22, s * .1); g.fill();
-    const ex = Math.cos(e.ang) * s * .1, ey = Math.sin(e.ang) * s * .1;
-    for (const k of [-1, 1]) {
-      g.fillStyle = '#fff'; g.beginPath(); g.arc(k * s * .19 + ex, s * .02 + ey, s * .15, 0, TAU); g.fill();
-      g.fillStyle = '#1d2b53'; g.beginPath(); g.arc(k * s * .19 + ex * 1.6, s * .02 + ey * 1.6, s * .075, 0, TAU); g.fill();
+  // ------------------------------------------------------------------ personagens 3D (voxel)
+  // Cada modelo é uma lista de caixas em coordenadas locais: u = frente, v = direita, w = altura.
+  const B = (u, v, w, du, dv, dw, c) => ({ u, v, w, du, dv, dw, c: rgb(c) });
+  const MODELS = {
+    melancia: () => {
+      const m = [B(-0.43, 0, 0.22, 0.14, 1.0, 0.44, '#2f9e44'), B(-0.33, 0, 0.22, 0.07, 0.96, 0.43, '#bef264')];
+      const W = [0.92, 0.72, 0.5, 0.28];
+      W.forEach((w, k) => m.push(B(-0.19 + k * 0.2, 0, 0.21, 0.21, w, 0.42, '#f43f5e')));
+      [[-0.17, -0.25], [-0.17, 0.25], [0.03, -0.14], [0.03, 0.14], [0.23, 0]].forEach(([u, v]) => m.push(B(u, v, 0.435, 0.07, 0.07, 0.03, '#3b0a12')));
+      // carinha na ponta
+      m.push(B(0.03, -0.14, 0.445, 0.02, 0.02, 0.01, '#3b0a12'));
+      return m;
+    },
+    vaca: () => [
+      B(0, 0, 0.45, 0.9, 0.9, 0.9, '#f8fafc'),
+      B(-0.1, 0.455, 0.58, 0.34, 0.02, 0.3, '#1f2937'), B(0.12, -0.455, 0.32, 0.28, 0.02, 0.26, '#1f2937'),
+      B(-0.455, 0.12, 0.55, 0.02, 0.38, 0.3, '#1f2937'), B(-0.2, -0.18, 0.905, 0.32, 0.3, 0.02, '#1f2937'),
+      B(0.5, 0, 0.27, 0.12, 0.62, 0.3, '#f9a8b8'),
+      B(0.565, -0.14, 0.29, 0.02, 0.09, 0.11, '#9f1239'), B(0.565, 0.14, 0.29, 0.02, 0.09, 0.11, '#9f1239'),
+      B(0.455, -0.24, 0.64, 0.02, 0.17, 0.19, '#ffffff'), B(0.455, 0.24, 0.64, 0.02, 0.17, 0.19, '#ffffff'),
+      B(0.47, -0.24, 0.62, 0.02, 0.09, 0.11, '#111827'), B(0.47, 0.24, 0.62, 0.02, 0.09, 0.11, '#111827'),
+      B(0.05, -0.3, 0.98, 0.12, 0.12, 0.16, '#fbbf24'), B(0.05, 0.3, 0.98, 0.12, 0.12, 0.16, '#fbbf24'),
+      B(0.05, -0.4, 1.08, 0.1, 0.16, 0.08, '#f59e0b'), B(0.05, 0.4, 1.08, 0.1, 0.16, 0.08, '#f59e0b'),
+      B(0.05, -0.52, 0.76, 0.14, 0.16, 0.1, '#f1f5f9'), B(0.05, 0.52, 0.76, 0.14, 0.16, 0.1, '#f1f5f9'),
+    ],
+    unicornio: () => [
+      B(-0.12, 0, 0.3, 0.88, 0.74, 0.6, '#fbcfe8'),
+      B(-0.58, 0, 0.42, 0.12, 0.16, 0.28, '#a78bfa'),
+      B(0.24, 0, 0.78, 0.44, 0.5, 0.52, '#f9a8d4'),
+      B(0.52, 0, 0.7, 0.2, 0.42, 0.28, '#f472b6'),
+      B(0.625, -0.1, 0.72, 0.01, 0.06, 0.06, '#831843'), B(0.625, 0.1, 0.72, 0.01, 0.06, 0.06, '#831843'),
+      B(0.3, -0.255, 0.86, 0.14, 0.02, 0.14, '#ffffff'), B(0.3, 0.255, 0.86, 0.14, 0.02, 0.14, '#ffffff'),
+      B(0.32, -0.265, 0.85, 0.08, 0.02, 0.09, '#1f2937'), B(0.32, 0.265, 0.85, 0.08, 0.02, 0.09, '#1f2937'),
+      B(0.4, -0.255, 0.72, 0.08, 0.02, 0.05, '#fb7185'), B(0.4, 0.255, 0.72, 0.08, 0.02, 0.05, '#fb7185'),
+      B(0.3, 0, 1.1, 0.14, 0.14, 0.12, '#fde047'), B(0.3, 0, 1.21, 0.1, 0.1, 0.12, '#facc15'), B(0.3, 0, 1.31, 0.05, 0.05, 0.1, '#fef9c3'),
+      B(0.06, 0, 1.02, 0.1, 0.22, 0.12, '#f43f5e'), B(0.0, 0, 0.9, 0.1, 0.24, 0.12, '#f59e0b'),
+      B(-0.05, 0, 0.78, 0.1, 0.24, 0.12, '#22c55e'), B(-0.1, 0, 0.66, 0.1, 0.22, 0.12, '#38bdf8'),
+      B(-0.15, 0, 0.56, 0.1, 0.2, 0.08, '#a78bfa'),
+    ],
+  };
+  const modelCache = new Map();
+  function cubeModel(color) {
+    return [
+      B(0, 0, 0.42, 0.9, 0.9, 0.84, color),
+      B(0.455, -0.2, 0.52, 0.02, 0.2, 0.22, '#ffffff'), B(0.455, 0.2, 0.52, 0.02, 0.2, 0.22, '#ffffff'),
+      B(0.47, -0.2, 0.5, 0.02, 0.1, 0.12, '#1d2b53'), B(0.47, 0.2, 0.5, 0.02, 0.1, 0.12, '#1d2b53'),
+    ];
+  }
+  function getModel(name, color) {
+    const key = name || 'cube:' + color;
+    if (!modelCache.has(key)) modelCache.set(key, name && MODELS[name] ? MODELS[name]() : cubeModel(color));
+    return modelCache.get(key);
+  }
+  const FACES = [
+    [[1, 0, 0], [1, 3, 7, 5]], [[-1, 0, 0], [0, 4, 6, 2]], [[0, 1, 0], [2, 6, 7, 3]],
+    [[0, -1, 0], [0, 1, 5, 4]], [[0, 0, 1], [4, 5, 7, 6]], [[0, 0, -1], [0, 2, 3, 1]],
+  ];
+  const LIGHT = (() => { const l = [-0.45, 0.35, 0.82], n = Math.hypot(...l); return l.map((x) => x / n); })();
+  const faceBuf = [];
+  // desenha o modelo: (sx,sy) = ponto no chão, s = tamanho em px de 1 unidade, ang = direção, el = inclinação da câmera
+  function drawModel(g, model, sx, sy, s, ang, el = 1.0) {
+    const ca = Math.cos(ang), sa = Math.sin(ang), CE = Math.cos(el), SE = Math.sin(el);
+    // sombra
+    g.fillStyle = 'rgba(0,0,0,.16)'; g.beginPath(); g.ellipse(sx, sy + s * 0.05, s * 0.62, s * 0.62 * SE, 0, 0, TAU); g.fill();
+    let n = 0;
+    const P = new Array(8);
+    for (const b of model) {
+      for (let i = 0; i < 8; i++) {
+        const u = b.u + (i & 1 ? .5 : -.5) * b.du, v = b.v + (i & 2 ? .5 : -.5) * b.dv, w = b.w + (i & 4 ? .5 : -.5) * b.dw;
+        const x = u * ca - v * sa, y = u * sa + v * ca;
+        P[i] = [x, y, w];
+      }
+      for (const [nl, idx] of FACES) {
+        const nx = nl[0] * ca - nl[1] * sa, ny = nl[0] * sa + nl[1] * ca, nz = nl[2];
+        if (ny * CE + nz * SE <= 0.002) continue;
+        let d = 0; const pts = [];
+        for (const k of idx) { const p = P[k]; d += p[1] * CE + p[2] * SE; pts.push(sx + p[0] * s, sy + (p[1] * SE - p[2] * CE) * s); }
+        const lit = 0.6 + 0.48 * Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+        const f = faceBuf[n] || (faceBuf[n] = {}); f.d = d; f.pts = pts; f.col = `rgb(${Math.min(255, b.c[0] * lit) | 0},${Math.min(255, b.c[1] * lit) | 0},${Math.min(255, b.c[2] * lit) | 0})`;
+        n++;
+      }
     }
-    g.restore();
+    const list = faceBuf.slice(0, n).sort((a, b) => a.d - b.d);
+    g.lineJoin = 'round'; g.lineWidth = Math.max(0.6, s * 0.012);
+    for (const f of list) {
+      const p = f.pts; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[2], p[3]); g.lineTo(p[4], p[5]); g.lineTo(p[6], p[7]); g.closePath();
+      g.fillStyle = f.col; g.strokeStyle = f.col; g.fill(); g.stroke();
+    }
+  }
+  function drawHead(g, e, sx, sy, s) {
+    drawModel(g, e.model || getModel(null, e.color), sx, sy + s * 0.3, s, e.ang, 0.85);
   }
 
   function render(dt) {
@@ -838,10 +917,10 @@
       const e = ents[i]; if (!e.alive) continue;
       const sx = ox + e.x * Z, sy = oy + e.y * Z;
       if (sx < -60 || sy < -60 || sx > VW + 60 || sy > VH + 60) continue;
-      drawHead(g, e, sx, sy, Z * 1.3);
+      drawHead(g, e, sx, sy, Z * 1.65);
       if (!e.isPlayer) {
-        g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.9)'; g.strokeText(e.name, sx, sy - Z * 1.1);
-        g.fillStyle = '#1d2b53'; g.fillText(e.name, sx, sy - Z * 1.1);
+        g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.9)'; g.strokeText(e.name, sx, sy - Z * 1.7);
+        g.fillStyle = '#1d2b53'; g.fillText(e.name, sx, sy - Z * 1.7);
       }
     }
     // joystick de toque
@@ -930,8 +1009,7 @@
     const sp = drawCountryShape(cvs, ci, sk.color === '#f1f5f9' ? '#94a3b8' : sk.color, { pad: 30 });
     if (unlocked(ci)) {
       const g = cvs.getContext('2d');
-      const fake = { color: sk.color, dark: sk.dark || shade(sk.color, -0.3), ang: Math.PI / 2 };
-      drawHead(g, fake, (sp.x0 + sp.x1) / 2, (sp.y0 + sp.y1) / 2 - 10, 64);
+      drawModel(g, getModel(sk.model, sk.color), (sp.x0 + sp.x1) / 2, (sp.y0 + sp.y1) / 2 + 20, 70, Math.PI / 2 - 0.55, 0.75);
     }
   }
 
@@ -999,7 +1077,9 @@
       const c = document.createElement('canvas'); c.width = 240; c.height = 150;
       const g = c.getContext('2d'); const tile = makeTile(sk.color, sk.pat, 8);
       g.fillStyle = g.createPattern(tile, 'repeat'); g.fillRect(0, 0, 240, 150);
-      drawHead(g, { color: sk.color, dark: sk.dark || shade(sk.color, -0.3), ang: Math.PI / 2 }, 120, 70, 70);
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(120, 112, 70, 22, 0, 0, TAU); g.fill();
+      drawModel(g, getModel(sk.model, sk.color), 120, 112, 88, Math.PI / 2 - 0.6, 0.75);
+      c.onclick = () => openViewer(SKINS.indexOf(sk));
       const owned = save.owned.includes(sk.id);
       const btn = document.createElement('button'); btn.className = 'tbtn';
       if (save.skin === sk.id) { btn.className += ' using'; btn.textContent = 'Usando'; }
@@ -1017,6 +1097,48 @@
       t.append(c, n, btn); grid.append(t);
     }
   }
+
+  // vitrine de skin: modelo 3D girando no pedestal
+  let viewerIdx = -1, viewerAng = 0, viewerLast = 0;
+  function openViewer(i) {
+    viewerIdx = (i + SKINS.length) % SKINS.length;
+    const sk = SKINS[viewerIdx], owned = save.owned.includes(sk.id), btn = $('vBtn');
+    $('vName').textContent = sk.name;
+    $('vCheck').classList.toggle('hidden', save.skin !== sk.id);
+    btn.className = 'btn big v-btn';
+    if (save.skin === sk.id) { btn.textContent = 'Em uso'; btn.classList.add('using'); }
+    else if (owned) btn.textContent = 'Usar';
+    else { btn.textContent = '🪙 ' + sk.price; btn.classList.add('price'); }
+    $('vCoins').textContent = save.coins;
+    if ($('viewer').classList.contains('hidden')) { $('viewer').classList.remove('hidden'); viewerLast = performance.now(); requestAnimationFrame(viewerLoop); }
+  }
+  function viewerLoop(t) {
+    if ($('viewer').classList.contains('hidden')) return;
+    const dt = Math.min(0.05, (t - viewerLast) / 1000); viewerLast = t; viewerAng += dt * 0.9;
+    const c = $('vCanvas'), g = c.getContext('2d'), w = c.width, h = c.height;
+    g.clearRect(0, 0, w, h);
+    const sk = SKINS[viewerIdx];
+    // pedestal
+    const py = h * 0.74;
+    const grd = g.createRadialGradient(w / 2, py, 10, w / 2, py, w * 0.36);
+    grd.addColorStop(0, 'rgba(255,255,255,.95)'); grd.addColorStop(0.7, 'rgba(220,245,255,.9)'); grd.addColorStop(1, 'rgba(255,255,255,.5)');
+    g.fillStyle = 'rgba(10,60,160,.25)'; g.beginPath(); g.ellipse(w / 2, py + 14, w * 0.37, w * 0.1, 0, 0, TAU); g.fill();
+    g.fillStyle = grd; g.beginPath(); g.ellipse(w / 2, py, w * 0.36, w * 0.095, 0, 0, TAU); g.fill();
+    drawModel(g, getModel(sk.model, sk.color), w / 2, py - 6, w * 0.46, viewerAng, 0.5);
+    requestAnimationFrame(viewerLoop);
+  }
+  $('vPrev').onclick = () => { sfx.click(); openViewer(viewerIdx - 1); };
+  $('vNext').onclick = () => { sfx.click(); openViewer(viewerIdx + 1); };
+  $('vClose').onclick = () => { sfx.click(); $('viewer').classList.add('hidden'); buildSkins(); };
+  $('vBtn').onclick = () => {
+    const sk = SKINS[viewerIdx];
+    if (save.skin === sk.id) return;
+    if (!save.owned.includes(sk.id)) {
+      if (save.coins < sk.price) { toast(`Faltam ${sk.price - save.coins} moedas. Jogue para ganhar mais!`); return; }
+      save.coins -= sk.price; save.owned.push(sk.id); sfx.win();
+    } else sfx.click();
+    save.skin = sk.id; persist(); openViewer(viewerIdx);
+  };
 
   function buildCountries() {
     const grid = $('countryGrid'); grid.innerHTML = '';

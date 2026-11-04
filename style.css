@@ -126,3 +126,24 @@ button{font-family:inherit;cursor:pointer;border:0}
 #toast.show{opacity:1}
 
 @media (max-height:640px){.logo{font-size:30px;margin:4px 0}.play{width:84px;height:84px}.mbottom{margin-top:10px}}
+
+/* vitrine de skin */
+.viewer{z-index:30;background:linear-gradient(#3b8cff 0%,#7cc4ff 44%,#bdf0ff 49%,#2bc0f5 51%,#1690f0 100%)}
+.viewer::after{content:"";position:absolute;left:0;right:0;bottom:0;top:51%;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),rgba(255,255,255,.35) calc(25% - 1px) 25%),
+             repeating-linear-gradient(0deg,transparent 0 79px,rgba(255,255,255,.3) 79px 80px)}
+.v-title{position:relative;z-index:1;display:flex;align-items:center;gap:10px;margin-top:6vh}
+.v-name{background:linear-gradient(#eaf6ff,#b9dcff);color:#1e2a78;font-weight:700;font-size:30px;padding:6px 40px;border-radius:16px;
+  border:3px solid #1e2a78;box-shadow:0 4px 0 #1e2a78;min-width:220px;text-align:center}
+.v-check{width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;font-weight:700;font-size:24px;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 3px 0 var(--green-d)}
+.v-stage{position:relative;z-index:1;flex:1;width:100%;max-width:520px;display:flex;align-items:center;justify-content:center;min-height:0}
+#vCanvas{width:min(86vw,440px);height:auto;max-height:56vh;aspect-ratio:1}
+.v-arrow{position:absolute;top:50%;transform:translateY(-50%);background:none;color:#fff;font-size:54px;font-weight:700;text-shadow:0 3px 0 #1e2a78;width:48px;height:72px}
+#vPrev{left:0}#vNext{right:0}
+.v-btn{position:relative;z-index:1;width:min(260px,80%);background:linear-gradient(#9ff0ff,#2fd0f5);color:#fff;-webkit-text-stroke:1.5px #1e2a78;paint-order:stroke fill;
+  font-size:28px;border:3px solid #1e2a78;box-shadow:0 5px 0 #1e2a78}
+.v-btn.using{opacity:.75}
+.v-btn.price{background:linear-gradient(#fff3a0,#ffd21f);color:#4b3300;-webkit-text-stroke:0}
+.v-close{position:relative;z-index:1;margin-top:18px;width:60px;height:60px;border-radius:50%;background:#fff;color:#1e4fd8;font-size:28px;font-weight:700;
+  border:3px solid #1e2a78;box-shadow:0 4px 0 #1e2a78;flex:none}
+.tile canvas{cursor:pointer}
