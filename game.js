@@ -31,22 +31,15 @@
   }
   const SKINS = [
     { id: 'classic', name: 'Clássico', price: 0, color: '#3b82f6', pat: 'none' },
-    { id: 'menta', name: 'Menta', price: 60, color: '#14b8a6', pat: 'dots' },
-    { id: 'uva', name: 'Uva', price: 100, color: '#a855f7', pat: 'dots' },
     { id: 'melancia', name: 'Melancia', price: 150, color: '#ef4444', pat: 'seeds', model: 'melancia' },
-    { id: 'mel', name: 'Favo de Mel', price: 200, color: '#f59e0b', pat: 'hex' },
-    { id: 'alien', name: 'Alien', price: 220, color: '#22c55e', pat: 'alien' },
     { id: 'vaca', name: 'Vaca', price: 250, color: '#f1f5f9', pat: 'spots', dark: '#94a3b8', light: '#ffffff', model: 'vaca' },
     { id: 'unicornio', name: 'Unicórnio', price: 300, color: '#f9a8d4', pat: 'stars', model: 'unicornio' },
-    { id: 'lava', name: 'Lava', price: 350, color: '#f97316', pat: 'stripes' },
-    { id: 'carvao', name: 'Carvão', price: 400, color: '#334155', pat: 'dots' },
-    { id: 'galaxia', name: 'Galáxia', price: 500, color: '#4c1d95', pat: 'stars' },
-    { id: 'ouro', name: 'Ouro', price: 800, color: '#facc15', pat: 'stars' },
     { id: 'nino', name: 'Nino', price: 400, color: '#27272a', pat: 'paws', model: 'nino' },
     { id: 'tereza', name: 'Tereza', price: 400, color: '#8a7b68', pat: 'tabby', model: 'tereza' },
     { id: 'bode', name: 'Bode', price: 450, color: '#e7dfcf', pat: 'grass', dark: '#a8a091', model: 'bode' },
   ];
   const skinById = (id) => SKINS.find((s) => s.id === id) || SKINS[0];
+  if (!SKINS.some((k) => k.id === save.skin)) save.skin = 'classic'; // skin removida volta para a clássica
   const BOT_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1',
     '#a855f7', '#ec4899', '#f43f5e', '#0ea5e9', '#92400e', '#64748b', '#d946ef'];
   const BOT_PATS = ['none', 'none', 'dots', 'stripes', 'spots', 'stars', 'hex', 'seeds', 'none'];
