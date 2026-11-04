@@ -12,7 +12,7 @@ Cada fase é um país, e o progresso (porcentagem conquistada) fica salvo no nav
 - Encostou na borda do mapa? O personagem desliza pela costa **mais rápido** até você mudar de direção. Os cantos do mapa são arredondados.
 - O progresso de cada país é **acumulativo**: 10% numa partida + 10% na outra = 20% do país. Ao chegar em 100% o país está concluído.
 - Faça **50%** em um país para liberar o próximo (20 países, com mais bots e bots mais espertos a cada fase).
-- Moedas ganhas nas partidas compram skins. Os personagens são modelos 3D em blocos (voxel) desenhados no próprio canvas, que giram conforme a direção. Toque numa skin para abrir a vitrine com o modelo girando.
+- Moedas ganhas nas partidas compram skins. Os personagens são modelos 3D em blocos (voxel) desenhados no próprio canvas, que giram conforme a direção. Toque numa skin para abrir a vitrine com o modelo girando. Inclui os gatos Nino e Tereza e o Bode.
 
 ## Publicar no GitHub Pages (grátis)
 1. Crie um repositório público no GitHub (ex.: `paper-world`).
